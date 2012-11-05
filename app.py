@@ -65,7 +65,6 @@ def random_color():
     return ''.join(random.choice('0123456789abcdef') for _ in range(6))
 
 def record_response(color, text_color):
-    logging.debug('%s %s' %(color, text_color))
     try:
         color = validate_color(color)        
         if text_color is not None:
