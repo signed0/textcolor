@@ -1,6 +1,10 @@
 import sys, os
 import random
 import logging
+import struct
+from colorsys import rgb_to_hsv
+
+
 from flask import Flask
 from flask import render_template, request
 import psycopg2
@@ -46,6 +50,9 @@ def index():
 class ColorError(Exception):
     pass
 
+def decode_hex_color(hex_str):
+    return struct.unpack('BBB',hex_str.decode('hex'))    
+
 def validate_color(color):
     if not color:
         raise ColorError("Color is empty")
@@ -73,10 +80,20 @@ def record_response(color, text_color):
         logging.exception(e)
         return
 
+    rgb = decode_hex_color(color)
+    rgb = tuple(i / 255.0 for i in rgb)
+    h, s, v = rgb_to_hsv(*rgb)
+
+    h = int(round(h * 360))
+    s = int(round(s * 100))
+    v = int(round(v * 100))
+
     conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor()
 
-    cur.execute('INSERT INTO answers (color, text_color) VALUES (%s, %s);', (color, text_color))
+    sql = '''INSERT INTO answers (color, text_color, color_h, color_s, color_v) 
+                VALUES (%s, %s, %s, %s, %s);'''
+    cur.execute(sql, (color, text_color, h, s, v))
     conn.commit()
 
     cur.close()
