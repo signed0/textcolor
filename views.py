@@ -1,17 +1,18 @@
 import random
-import struct
-from colorsys import rgb_to_hsv
+from operator import itemgetter
 
-from flask import render_template, request
+from flask import render_template, request, abort
 
 import psycopg2
-from app import app
 
+from app import app
+import db
 from utils import parse_db_uri
+from color_utils import random_color, validate_color, ColorError
 
 TEXT_COLORS = ('000000', 'ffffff')
 
-WORDS = ['North', 'South', 'East', 'West', 'Table', 'Chair', 'Desk']
+WORDS = ['North', 'South', 'East', 'West', 'Table', 'Chair', 'Desk', 'Lamp']
 
 def db_conn(app):
     db_params = parse_db_uri(app.config['DATABASE_URI'])
@@ -46,54 +47,32 @@ def index():
                            word=word
                            )
 
-class ColorError(Exception):
-    pass
+@app.route('/hues/<int:hue>')
+def by_hue(hue):
 
-def decode_hex_color(hex_str):
-    return struct.unpack('BBB',hex_str.decode('hex'))    
+    if hue < 0 or hue > 360:
+        abort(404)
 
-def validate_color(color):
-    if not color:
-        raise ColorError("Color is empty")
+    conn = db_conn(app)
+    answers = db.get_answers_by_hue(conn, hue)
+    conn.close()
 
-    color = color.strip().lower()
+    answers = sorted(answers, key=itemgetter('color_s'))
 
-    if len(color) != 6:
-        raise ColorError("Color is not proper length")
-
-    for c in color:
-        if c not in '0123456789abcdef':
-            raise ColorError("Invalid color character %s" % c)
-
-    return color
-
-def random_color():
-    return ''.join(random.choice('0123456789abcdef') for _ in range(6))
+    return render_template('by_hue.html',
+                           hue=hue,
+                           answers=answers
+                           )
 
 def record_response(color, text_color):
     try:
         color = validate_color(color)        
         if text_color is not None:
             text_color = validate_color(text_color)
-    except Exception as e:
+    except ColorError as e:
         logging.exception(e)
         return
 
-    rgb = decode_hex_color(color)
-    rgb = tuple(i / 255.0 for i in rgb)
-    h, s, v = rgb_to_hsv(*rgb)
-
-    h = int(round(h * 360))
-    s = int(round(s * 100))
-    v = int(round(v * 100))
-
     conn = db_conn(app)
-    cur = conn.cursor()
-
-    sql = '''INSERT INTO answers (color, text_color, color_h, color_s, color_v) 
-                VALUES (%s, %s, %s, %s, %s);'''
-    cur.execute(sql, (color, text_color, h, s, v))
-    conn.commit()
-
-    cur.close()
+    db.add_answer(conn, color, text_color)
     conn.close()
