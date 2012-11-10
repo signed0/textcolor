@@ -18,9 +18,12 @@
     </head>
     <body>
         <div class="container">
-            <h1>Hue of {{ hue }}°</h1>
+            <div style="padding-top: 1em; padding-bottom: 2em">
+                <h1>Hue of {{ hue }}°</h1>
+            </div>
 
             <table class="table">
+                <thead>
                 <tr>
                     <th></th>
                     <th>Color</th>
@@ -28,20 +31,23 @@
                     <th>Saturation</th>
                     <th>Value</th>
                 </tr>
+                </thead>
 
-            {% for answer in answers %}
-                <tr>
-                <td>
-                    <div class="label badge" style="background-color: #{{ answer.color }}; color: #{{ answer.text_color }}">
-                        {{ answer.color }}
-                    </div>
-                </td>
-                <td><code>{{ answer.color }}</code></td>
-                <td><code>{{ answer.text_color }}</code></td>
-                <td>{{ answer.color_s }}</td>
-                <td>{{ answer.color_v }}</td>
-                </tr>
-            {% endfor %}
+                <tbody>
+                    {% for answer in answers %}
+                        <tr>
+                        <td>
+                            <div class="label badge" style="background-color: #{{ answer.color }}; color: #{{ answer.text_color }}">
+                                {{ answer.color }}
+                            </div>
+                        </td>
+                        <td><code>{{ answer.color }}</code></td>
+                        <td><code>{{ answer.text_color }}</code></td>
+                        <td>{{ answer.color_s }}</td>
+                        <td>{{ answer.color_v }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
             </table>
         </div>
     </body>
