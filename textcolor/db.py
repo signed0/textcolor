@@ -18,7 +18,7 @@ def add_answer(conn, color, text_color):
     rgb = tuple(i / 255.0 for i in rgb)
     h, s, v = rgb_to_hsv(*rgb)
 
-    h = int(round(h * 360))
+    h = int(round(h * 360)) % 360
     s = int(round(s * 100))
     v = int(round(v * 100))
 
